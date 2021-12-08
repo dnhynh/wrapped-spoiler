@@ -2,9 +2,9 @@ const path = require('path')
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
 const cors = require('cors')
 const cookieParser = require('cookie-parser');
-var querystring = require('querystring');
 const SpotifyWebApi = require('spotify-web-api-node');
 const express = require('express');
+const { URLSearchParams } = require('url');
 const app = express();
 
 /**
@@ -22,7 +22,6 @@ const app = express();
   return text;
 };
 
-// TODO: Production URL
 const redirectUri = process.env.NODE_ENV === "dev" ? 'http://localhost:8888/callback' : 'http://localhost:8888/callback';
 const scopes = ["user-read-private", "user-read-email", "user-read-playback-state", "user-read-recently-played", "playlist-read-private", "playlist-read-collaborative", "playlist-modify-public", "playlist-modify-private", "user-top-read"];
 const credentials = {
@@ -39,13 +38,17 @@ app.use(express.static(__dirname + '/public'))
    .use(cors())
    .use(cookieParser());
 
+  /**
+  * Generate Spotify Authorization URL
+  * @returns {json}
+  */
 app.get('/login', function(req, res) {
   // Create the authorization URL
   const state = generateRandomString(16)
   var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
   res.cookie(stateKey, state);
 
-  res.redirect(authorizeURL)
+  res.json({url: authorizeURL});
 })
 
 app.get('/callback', function(req, res) {
@@ -53,7 +56,7 @@ app.get('/callback', function(req, res) {
   var storedState = req.cookies ? req.cookies[stateKey] : null;
   if (state === null || state !== storedState) {
     res.redirect('/#' +
-      querystring.stringify({
+      URLSearchParams.stringify({
         error: 'state_mismatch'
       }));
   } else {
@@ -67,15 +70,63 @@ app.get('/callback', function(req, res) {
       console.log('The refresh token is ' + data.body['refresh_token']);
   
       // Set the access token on the API object to use it in later calls
+      
       spotifyApi.setAccessToken(data.body['access_token']);
       spotifyApi.setRefreshToken(data.body['refresh_token']);
-      res.redirect('http://localhost:3000');
+
+      res.cookie('token', data.body.access_token, {httpOnly: true})
+      res.cookie('refresh', data.body.refresh_token, {httpOnly: true})
+
+      res.redirect(`http://localhost:3000`);
     },
     function(err) {
       console.log('Something went wrong!', err);
     }
   );
 });
+
+/**
+ * Get 50 recent tracks from user and return audio analysis
+ */
+app.get('/recent', (req, res) => {
+  !spotifyApi.getAccessToken() && spotifyApi.setAccessToken(req.cookies['token']) 
+  spotifyApi.getMyRecentlyPlayedTracks({
+    limit : 50
+  }).then(function(data) {
+      // Fetch Audio Analysis
+      const allTrackInfo = {}
+      const tracks = []
+
+      data.body.items.forEach((item) => {
+        tracks.push(item.track.id)
+        // Construct track info
+        allTrackInfo[item.track.id] = {
+          song_name: item.track.name,
+          artist: item.track.artists.map((artist) => artist.name),
+          album: item.track.album,
+          played_at: item.played_at,
+          preview: item.track.preview_url,
+        }
+      })
+      spotifyApi.getAudioFeaturesForTracks(tracks)
+        .then(function(data) {
+          const trackData = [];
+          data.body.audio_features.forEach((analysis) => {
+            allTrackInfo[analysis.id] = {
+              ...allTrackInfo[analysis.id],
+              analysis: analysis
+            }
+            trackData.push(allTrackInfo[analysis.id])
+          })
+          res.json({data: trackData})
+        }, function(err) {
+          console.log(err);
+        });
+    }, function(err) {
+      console.log('Something went wrong!', err);
+    });
+
+})
   
 
 const server = app.listen(8888, function (){

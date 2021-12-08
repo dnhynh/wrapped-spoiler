@@ -1,10 +1,10 @@
-import axios from "axios";
+import Nav from "./components/Nav"
 import './App.css';
 
 function App() {
   return (
     <div className="App">
-      <a href="http://localhost:8888/login">Login</a>
+      <Nav />
     </div>
   );
 }
