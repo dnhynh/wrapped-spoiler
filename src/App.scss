@@ -1,0 +1,42 @@
+html, body {
+  overscroll-behavior-y: none;
+}
+
+.nav {
+  position: fixed;
+  display: flex;
+  width: 100%;
+  top: 0;
+  left: 0;
+  align-items: center;
+  padding: 5px 20px;
+}
+
+.nav h1 {
+  margin: 0;
+  margin-right: 20px;
+}
+
+button {
+  margin: 20px;
+}
+
+.main-body {
+  padding-top: 49px;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.track-block {
+  display:flex;
+  padding: 10px;
+  font-size: .75rem;
+}
+
+.tracks-container {
+  display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr
+}

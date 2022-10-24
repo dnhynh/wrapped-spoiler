@@ -11,13 +11,16 @@
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "lodash": "^4.17.21",
     "path": "^0.12.7",
     "querystring": "^0.2.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3",
+    "react-scripts": "^4.0.3",
     "request": "^2.88.2",
+    "sass": "^1.55.0",
     "spotify-web-api-node": "^5.0.2",
+    "update": "^0.7.4",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
@@ -25,12 +28,6 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

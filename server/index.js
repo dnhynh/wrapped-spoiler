@@ -38,10 +38,10 @@ app.use(express.static(__dirname + '/public'))
    .use(cors())
    .use(cookieParser());
 
-  /**
-  * Generate Spotify Authorization URL
-  * @returns {json}
-  */
+/**
+* Generate Spotify Authorization URL
+* @returns {json}
+*/
 app.get('/login', function(req, res) {
   // Create the authorization URL
   const state = generateRandomString(16)
@@ -55,13 +55,11 @@ app.get('/callback', function(req, res) {
   var state = req.query.state || null;
   var storedState = req.cookies ? req.cookies[stateKey] : null;
   if (state === null || state !== storedState) {
-    res.redirect('/#' +
-      URLSearchParams.stringify({
-        error: 'state_mismatch'
-      }));
+    const params = new URLSearchParams('error=state_mismatch');
+    res.redirect('/#' + params);
   } else {
     res.clearCookie(stateKey);
-  };
+  }
   const { code } = req.query;
   spotifyApi.authorizationCodeGrant(code).then(
     function(data) {
@@ -102,7 +100,7 @@ app.get('/recent', (req, res) => {
         // Construct track info
         allTrackInfo[item.track.id] = {
           song_name: item.track.name,
-          artist: item.track.artists.map((artist) => artist.name),
+          artists: item.track.artists.map((artist) => artist.name),
           album: item.track.album,
           played_at: item.played_at,
           preview: item.track.preview_url,
@@ -118,18 +116,42 @@ app.get('/recent', (req, res) => {
             }
             trackData.push(allTrackInfo[analysis.id])
           })
-          res.json({data: trackData})
+          res.json({allTrackInfo: trackData})
         }, function(err) {
           console.log(err);
         });
     }, function(err) {
       console.log('Something went wrong!', err);
     });
-
 })
-  
+
+app.get('/top-artists', (req, res) => {
+  /* Get a User’s Top Artists*/
+  spotifyApi.getMyTopArtists()
+  .then(function(data) {
+    let topArtists = data.body.items;
+    res.json({
+      top_artists: topArtists
+    })
+  }, function(err) {
+    console.log('Something went wrong!', err);
+  });
+})
+
+app.get('/top-tracks', (req, res) => {
+  /* Get a User’s Top Tracks*/
+  spotifyApi.getMyTopTracks()
+  .then(function(data) {
+    let topTracks = data.body.items;
+    res.json({
+      top_tracks: topTracks
+    })
+  }, function(err) {
+    console.log('Something went wrong!', err);
+  });
+})
 
 const server = app.listen(8888, function (){
   var port = server.address().port
   console.log(`Server listening on localhost:${port}`)
-});;
+});
